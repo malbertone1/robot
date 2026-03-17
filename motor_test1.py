@@ -1,8 +1,7 @@
-from gpiozero import Motor, PWMOutputDevice
+from gpiozero import PWMOutputDevice
 from time import sleep
 
-# Pin definitions using gpiozero
-# Motor channels using PWM and direction pins
+# Pin definitions
 pwm1 = PWMOutputDevice(12)  # Left speed
 pwm2 = PWMOutputDevice(13)  # Right speed
 dir1 = PWMOutputDevice(24)  # Left direction
@@ -18,9 +17,9 @@ try:
     print("Initializing - GPIO set safe...")
     sleep(2)
 
-    print("Testing forward...")
-    dir1.value = 0  # ? swapped from 1 to 0
-    dir2.value = 0  # ? swapped from 1 to 0
+    print("Spinning clockwise...")
+    dir1.value = 0  # Left forward
+    dir2.value = 1  # Right reverse
     pwm1.value = 0.5
     pwm2.value = 0.5
     sleep(3)
@@ -30,9 +29,9 @@ try:
     pwm2.value = 0
     sleep(1)
 
-    print("Testing reverse...")
-    dir1.value = 1  # ? swapped from 0 to 1
-    dir2.value = 1  # ? swapped from 0 to 1
+    print("Spinning counter-clockwise...")
+    dir1.value = 1  # Left reverse
+    dir2.value = 0  # Right forward
     pwm1.value = 0.5
     pwm2.value = 0.5
     sleep(3)
