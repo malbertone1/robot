@@ -17,9 +17,7 @@ class Robot:
         self.speed = 0.15
         self.target_heading = 0
         self.recent_distances = []
-        self.turning = False
-        self.stuck_counter = 0
-        self.stuck_max = 20
+        self.current_light_mode = None
         print("Robot ready!")
 
     def start(self):
@@ -36,16 +34,11 @@ class Robot:
             self.shutdown()
 
     def _run_loop(self):
-        while self.running:
+        stuck_counter = 0
+        stuck_max = 1
+        prev_avg = 0
 
-            # Check if robot has been lifted
-            if self.gyro.is_lifted():
-                print("Robot lifted - stopping motors!")
-                self.motors.pwm1.value = 0
-                self.motors.pwm2.value = 0
-                self.audio.speak("Robot lifted")
-                time.sleep(1)
-                continue
+        while self.running:
 
             front_dist = self.obstacle.get_front_distance()
 
@@ -56,7 +49,34 @@ class Robot:
 
             safe_dist = min(self.recent_distances) if self.recent_distances else float('inf')
 
-            print(f"Front: {front_dist:.0f}mm  Safe: {safe_dist:.0f}mm  Scans: {len(self.obstacle.scan_data)}")
+            # Combined stuck detection
+            if self.motors.pwm1.value > 0:
+                current_avg = self.obstacle.get_average_distance()
+                avg_change = abs(current_avg - prev_avg)
+                rotation = self.gyro.get_rotation_rate()
+
+                if rotation < 2.0 and avg_change < 30:
+                    stuck_counter += 1
+                else:
+                    stuck_counter = 0
+
+                if stuck_counter > stuck_max:
+                    print("Stuck detected!")
+                    self.audio.speak("Stuck detected")
+                    self.motors.pwm1.value = 0
+                    self.motors.pwm2.value = 0
+                    time.sleep(0.5)
+                    self._emergency_reverse()
+                    stuck_counter = 0
+                    self.recent_distances.clear()
+                    self.gyro.reset_heading()
+                    self.target_heading = 0
+                    prev_avg = 0
+                    continue
+
+                prev_avg = current_avg
+
+            print(f"Front: {front_dist:.0f}mm  Safe: {safe_dist:.0f}mm  Stuck: {stuck_counter}")
 
             if safe_dist == float('inf') or safe_dist > 500:
                 self._move_forward()
@@ -66,18 +86,25 @@ class Robot:
             time.sleep(0.05)
 
     def _move_forward(self):
+        if abs(self.gyro.heading) > 30:
+            self.gyro.reset_heading()
+            self.target_heading = 0
+
         try:
             correction = self.gyro.get_correction(self.target_heading)
         except:
             correction = 0
 
-        left_speed = max(0.15, min(self.speed - correction, 0.8))
-        right_speed = max(0.15, min(self.speed + correction, 0.8))
+        left_speed = max(0.15, min(self.speed + correction, 0.8))
+        right_speed = max(0.15, min(self.speed - correction, 0.8))
 
         self.motors._set_forward_direction()
         self.motors.pwm1.value = left_speed
         self.motors.pwm2.value = right_speed
-        self.lights.forward_mode()
+
+        if self.current_light_mode != 'forward':
+            self.lights.forward_mode()
+            self.current_light_mode = 'forward'
 
     def _handle_obstacle(self, distance):
         # Cut power IMMEDIATELY
@@ -87,7 +114,11 @@ class Robot:
         self.motors.dir2.value = 0
 
         print(f"Obstacle detected at {distance:.0f}mm!")
-        self.lights.stopped_mode()
+
+        if self.current_light_mode != 'stopped':
+            self.lights.stopped_mode()
+            self.current_light_mode = 'stopped'
+
         time.sleep(0.5)
 
         self.audio.speak("Obstacle detected")
@@ -97,7 +128,6 @@ class Robot:
         print(f"Turning {direction} until clear...")
         self.audio.speak(f"Turning {direction}")
 
-        # Set turn direction
         if direction == 'left':
             self.motors.dir1.value = 1
             self.motors.dir2.value = 0
@@ -107,47 +137,23 @@ class Robot:
 
         self.motors.pwm1.value = 0.3
         self.motors.pwm2.value = 0.3
-        self.lights.reverse_mode()
-        self.turning = True
 
-        # Keep turning until clear checking for stuck
-        stuck_count = 0
+        if self.current_light_mode != 'reverse':
+            self.lights.reverse_mode()
+            self.current_light_mode = 'reverse'
+
+        # Keep turning until clear
         while self.running:
             front_dist = self.obstacle.get_front_distance()
             rotation = self.gyro.get_rotation_rate()
             print(f"Turning {direction}... front: {front_dist:.0f}mm rotation: {rotation:.1f}deg/s")
 
-            # Check if lifted during turn
-            if self.gyro.is_lifted():
-                print("Lifted during turn - stopping!")
-                self.motors.pwm1.value = 0
-                self.motors.pwm2.value = 0
-                self.audio.speak("Robot lifted")
-                break
-
-            # Check if stuck - wheels turning but no rotation detected
-            if rotation < 0.5:
-                stuck_count += 1
-                print(f"Possible stuck - count: {stuck_count}")
-            else:
-                stuck_count = 0
-
-            # If stuck for too long try reversing
-            if stuck_count > self.stuck_max:
-                print("Stuck detected - trying reverse!")
-                self.audio.speak("Stuck, reversing")
-                self._emergency_reverse()
-                stuck_count = 0
-                break
-
-            # Path clear - exit turn
             if front_dist > 500:
                 print("Path clear!")
                 break
 
             time.sleep(0.1)
 
-        self.turning = False
         self.motors.pwm1.value = 0
         self.motors.pwm2.value = 0
         time.sleep(0.5)
@@ -155,10 +161,10 @@ class Robot:
         self.gyro.reset_heading()
         self.target_heading = 0
         self.recent_distances.clear()
+        self.current_light_mode = None
         print("Resuming...")
 
     def _emergency_reverse(self):
-        """Reverse if stuck - check rear clearance first"""
         rear_dist = self.obstacle.get_rear_distance()
         print(f"Rear distance: {rear_dist:.0f}mm")
 
@@ -169,10 +175,17 @@ class Robot:
             self.motors.dir2.value = 1
             self.motors.pwm1.value = 0.2
             self.motors.pwm2.value = 0.2
-            self.lights.reverse_mode()
+
+            if self.current_light_mode != 'reverse':
+                self.lights.reverse_mode()
+                self.current_light_mode = 'reverse'
+
             time.sleep(1.5)
             self.motors.pwm1.value = 0
             self.motors.pwm2.value = 0
+            self.gyro.reset_heading()
+            self.target_heading = 0
+            self.current_light_mode = None
             time.sleep(0.5)
         else:
             print("Rear blocked - cannot reverse!")

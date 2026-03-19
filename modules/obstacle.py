@@ -97,7 +97,7 @@ class Obstacle:
 
     def get_front_distance(self):
         """Get actual front distance in mm"""
-        return self.get_min_distance(350, 10)
+        return self.get_min_distance(335, 25)
 
     def get_best_direction(self):
         """Determine best direction to avoid obstacle"""
@@ -115,3 +115,23 @@ class Obstacle:
             self.scan_thread.join(timeout=2)
         self.lidar.stop()
         self.lidar.disconnect()
+
+    def get_average_distance(self):
+        """Get average of all valid scan distances"""
+        if not self.scan_data:
+            return 0
+        valid = [d for d in self.scan_data.values() if 0 < d < 5000]
+        if not valid:
+            return 0
+        return sum(valid) / len(valid)
+
+    def get_distance_variance(self):
+        """Get variance of all scan distances"""
+        if not self.scan_data:
+            return 0
+        valid = [d for d in self.scan_data.values() if 0 < d < 5000]
+        if len(valid) < 10:
+            return 0
+        avg = sum(valid) / len(valid)
+        variance = sum((d - avg) ** 2 for d in valid) / len(valid)
+        return variance
