@@ -21,8 +21,8 @@ try:
     print("Testing forward...")
     dir1.value = 0  # ? swapped from 1 to 0
     dir2.value = 0  # ? swapped from 1 to 0
-    pwm1.value = 0.5
-    pwm2.value = 0.5
+    pwm1.value = 0.2
+    pwm2.value = 0.2
     sleep(3)
 
     print("Stopping...")
@@ -33,8 +33,8 @@ try:
     print("Testing reverse...")
     dir1.value = 1  # ? swapped from 0 to 1
     dir2.value = 1  # ? swapped from 0 to 1
-    pwm1.value = 0.5
-    pwm2.value = 0.5
+    pwm1.value = 0.2
+    pwm2.value = 0.2
     sleep(3)
 
     print("Stopping...")

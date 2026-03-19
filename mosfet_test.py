@@ -18,7 +18,7 @@ try:
     sleep(2)
 
     print("Test 2: Front light 50%")
-    FRONT_LIGHT.value = 0.5
+    FRONT_LIGHT.value = 0.3
     sleep(2)
 
     print("Test 3: Front light OFF")
@@ -30,7 +30,7 @@ try:
     sleep(2)
 
     print("Test 5: Rear light 50%")
-    REAR_LIGHT.value = 0.5
+    REAR_LIGHT.value = 0.3
     sleep(2)
 
     print("Test 6: Rear light OFF")
@@ -49,7 +49,7 @@ try:
     print("Test 8: Forward mode - front full, rear 50% blink")
     FRONT_LIGHT.value = 1.0
     for i in range(5):
-        REAR_LIGHT.value = 0.5
+        REAR_LIGHT.value = 0.3
         sleep(0.5)
         REAR_LIGHT.value = 0
         sleep(0.5)
@@ -58,7 +58,7 @@ try:
     print("Test 9: Reverse mode - rear full, front 50% blink")
     REAR_LIGHT.value = 1.0
     for i in range(5):
-        FRONT_LIGHT.value = 0.5
+        FRONT_LIGHT.value = 0.3
         sleep(0.5)
         FRONT_LIGHT.value = 0
         sleep(0.5)

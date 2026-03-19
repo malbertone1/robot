@@ -20,8 +20,8 @@ try:
     print("Spinning clockwise...")
     dir1.value = 0  # Left forward
     dir2.value = 1  # Right reverse
-    pwm1.value = 0.5
-    pwm2.value = 0.5
+    pwm1.value = 0.8
+    pwm2.value = 0.8
     sleep(3)
 
     print("Stopping...")
@@ -32,8 +32,8 @@ try:
     print("Spinning counter-clockwise...")
     dir1.value = 1  # Left reverse
     dir2.value = 0  # Right forward
-    pwm1.value = 0.5
-    pwm2.value = 0.5
+    pwm1.value = 0.8
+    pwm2.value = 0.8
     sleep(3)
 
     print("Stopping...")
