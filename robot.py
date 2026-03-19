@@ -35,7 +35,7 @@ class Robot:
 
     def _run_loop(self):
         stuck_counter = 0
-        stuck_max = 1
+        stuck_max = 2
         prev_avg = 0
 
         while self.running:
@@ -49,13 +49,12 @@ class Robot:
 
             safe_dist = min(self.recent_distances) if self.recent_distances else float('inf')
 
-            # Combined stuck detection
-            if self.motors.pwm1.value > 0:
-                current_avg = self.obstacle.get_average_distance()
-                avg_change = abs(current_avg - prev_avg)
+            # Stuck detection using front distance change
+            if self.motors.pwm1.value > 0 and len(self.recent_distances) >= 3:
+                dist_change = max(self.recent_distances) - min(self.recent_distances)
                 rotation = self.gyro.get_rotation_rate()
 
-                if rotation < 2.0 and avg_change < 30:
+                if rotation < 2.0 and dist_change < 15:
                     stuck_counter += 1
                 else:
                     stuck_counter = 0
@@ -71,10 +70,7 @@ class Robot:
                     self.recent_distances.clear()
                     self.gyro.reset_heading()
                     self.target_heading = 0
-                    prev_avg = 0
                     continue
-
-                prev_avg = current_avg
 
             print(f"Front: {front_dist:.0f}mm  Safe: {safe_dist:.0f}mm  Stuck: {stuck_counter}")
 
