@@ -16,12 +16,19 @@ class Motors:
         # Speed settings
         self.current_speed = 0
         self.max_speed = 0.8      # 80% max for safety
-        self.min_speed = 0.3      # minimum to overcome inertia
+        self.min_speed = 0.2      # minimum to overcome inertia
         self.accel_step = 0.05    # acceleration increment
         self.accel_delay = 0.1    # seconds between steps
         
         # Safety stop
         self.stop()
+    def emergency_stop(self):
+        """Immediate stop - no gradual deceleration"""
+        self.pwm1.value = 0
+        self.pwm2.value = 0
+        self.dir1.value = 0
+        self.dir2.value = 0
+        self.current_speed = 0
 
     def _set_forward_direction(self):
         self.dir1.value = 0

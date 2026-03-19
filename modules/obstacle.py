@@ -27,6 +27,14 @@ class Obstacle:
             baudrate=460800,
             timeout=3
         )
+    def get_rear_distance(self):
+        """Get actual rear distance in mm"""
+        return self.get_min_distance(170, 190)
+
+    def is_rear_clear(self):
+        """Check if rear is clear for reversing"""
+        dist = self.get_rear_distance()
+        return dist > (self.min_clearance + self.robot_length/2)
 
     def start_scanning(self):
         """Start background scanning thread"""

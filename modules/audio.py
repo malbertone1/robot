@@ -16,10 +16,14 @@ class Audio:
             thread.start()
 
     def _speak(self, text):
-        """Actually speak using espeak"""
         self.speaking = True
         subprocess.run(
-            ['espeak', '-v', 'en', '-s', '150', text],
+            ['espeak', 
+             '-v', 'en-us',  # American English clearer
+             '-s', '130',    # slower speed (was 150)
+             '-p', '50',     # pitch
+             '-a', '200',    # amplitude (louder)
+             text],
             capture_output=True
         )
         self.speaking = False
